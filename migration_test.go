@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_MigratorNewNames(t *testing.T) {
+func Test_MyMigrateNewNames(t *testing.T) {
 	testError := errors.New("test error")
 
 	type testCase struct {
@@ -105,7 +105,7 @@ func Test_MigratorNewNames(t *testing.T) {
 
 }
 
-func Test_MigratorApply(t *testing.T) {
+func Test_MyMigrateApply(t *testing.T) {
 	applyErr := errors.New("apply err")
 	markAppliedErr := errors.New("mark applied err")
 	err1 := errors.New("err1")
