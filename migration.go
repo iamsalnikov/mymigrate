@@ -20,10 +20,13 @@ type mig struct {
 const migrationsTable = "mymigrations"
 
 var defaultAppliedFunc = AppliedFunc(func(db *sql.DB) ([]string, error) {
-	createMigrationsTable(db)
+	err := createMigrationsTable(db)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	query := fmt.Sprintf("SELECT name FROM %s ORDER BY time DESC", migrationsTable)
+	query := fmt.Sprintf("SELECT name FROM %s ORDER BY time DESC, name DESC", migrationsTable)
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return []string{}, err
@@ -46,11 +49,14 @@ var defaultAppliedFunc = AppliedFunc(func(db *sql.DB) ([]string, error) {
 })
 
 var defaultMarkAppliedFunc = MarkAppliedFunc(func(db *sql.DB, name string) error {
-	createMigrationsTable(db)
+	err := createMigrationsTable(db)
+	if err != nil {
+		return err
+	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	query := fmt.Sprintf("INSERT INTO %s (name, time) VALUES (?, ?)", migrationsTable)
-	_, err := db.ExecContext(ctx, query, name, time.Now())
+	_, err = db.ExecContext(ctx, query, name, time.Now())
 
 	return err
 })
@@ -162,4 +168,9 @@ func init() {
 
 	name = fmt.Sprintf("%s-%s", time.Now().Format("20060102-150405"), name)
 	return fmt.Sprintf(template, pkg, name)
+}
+
+// History func returns chronological history of applied migrations
+func History() ([]string, error) {
+	return getApplied(db)
 }
