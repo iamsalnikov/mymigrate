@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_MyMigrateNewNames(t *testing.T) {
@@ -239,6 +241,113 @@ func Test_MyMigrateApply(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_MyMigrateDown(t *testing.T) {
+	reset := func() {
+		resetMigrations()
+		resetMarkAppliedFunc()
+		resetAppliedFunc()
+		resetDownFunc()
+	}
+
+	type testCase struct {
+		applied       []string
+		appliedErr    error
+		downCount     int
+		expDownNames  []string
+		downErr       error
+		expErr        error
+		expDownCalled bool
+	}
+
+	testCases := map[string]testCase{
+		"applied error": {
+			applied:       []string{},
+			appliedErr:    errors.New("hello"),
+			downCount:     0,
+			expDownNames:  []string{},
+			downErr:       nil,
+			expErr:        errors.New("hello"),
+			expDownCalled: false,
+		},
+		"applied zero migrations and ask do down 10": {
+			applied:       []string{},
+			appliedErr:    nil,
+			downCount:     10,
+			expDownNames:  []string{},
+			downErr:       nil,
+			expErr:        nil,
+			expDownCalled: false,
+		},
+		"applied two and ask do down 10": {
+			applied:       []string{"mig_001", "mig_002"},
+			appliedErr:    nil,
+			downCount:     10,
+			expDownNames:  []string{"mig_001", "mig_002"},
+			downErr:       nil,
+			expErr:        nil,
+			expDownCalled: true,
+		},
+		"applied three and ask do down 2": {
+			applied:       []string{"mig_001", "mig_002", "mig_003"},
+			appliedErr:    nil,
+			downCount:     2,
+			expDownNames:  []string{"mig_001", "mig_002"},
+			downErr:       nil,
+			expErr:        nil,
+			expDownCalled: true,
+		},
+		"applied three and ask do down all of them by 0 number": {
+			applied:       []string{"mig_001", "mig_002", "mig_003"},
+			appliedErr:    nil,
+			downCount:     0,
+			expDownNames:  []string{"mig_001", "mig_002", "mig_003"},
+			downErr:       nil,
+			expErr:        nil,
+			expDownCalled: true,
+		},
+		"applied three and ask do down all of them by exact number": {
+			applied:       []string{"mig_001", "mig_002", "mig_003"},
+			appliedErr:    nil,
+			downCount:     3,
+			expDownNames:  []string{"mig_001", "mig_002", "mig_003"},
+			downErr:       nil,
+			expErr:        nil,
+			expDownCalled: true,
+		},
+		"applied and downed with error": {
+			applied:       []string{"mig_001", "mig_002", "mig_003"},
+			appliedErr:    nil,
+			downCount:     1,
+			expDownNames:  []string{"mig_001"},
+			downErr:       errors.New("down error"),
+			expErr:        errors.New("down error"),
+			expDownCalled: true,
+		},
+	}
+
+	for tcName, tc := range testCases {
+		t.Run(tcName, func(t *testing.T) {
+			defer reset()
+
+			getApplied = func(db *sql.DB) ([]string, error) {
+				return tc.applied, tc.appliedErr
+			}
+
+			isDownCalled := false
+			down = func(db *sql.DB, names []string) error {
+				assert.EqualValues(t, tc.expDownNames, names, "проверка на ожидаемые миграции для отката")
+				isDownCalled = true
+				return tc.downErr
+			}
+
+			err := Down(tc.downCount)
+			assert.EqualValues(t, tc.expErr, err, "проверка на ожидаемую ошибку")
+			assert.EqualValues(t, tc.expDownCalled, isDownCalled, "проверка навызов функции down")
+		})
+	}
+
 }
 
 func isEqualSlices(a, b []string) bool {

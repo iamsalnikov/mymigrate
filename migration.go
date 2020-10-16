@@ -11,6 +11,7 @@ import (
 type AppliedFunc func(db *sql.DB) ([]string, error)
 type MarkAppliedFunc func(db *sql.DB, name string) error
 type UpFunc func(db *sql.DB) error
+type DownFunc func(db *sql.DB, names []string) error
 
 type mig struct {
 	name string
@@ -61,10 +62,15 @@ var defaultMarkAppliedFunc = MarkAppliedFunc(func(db *sql.DB, name string) error
 	return err
 })
 
+var defaultDownFunc = DownFunc(func(db *sql.DB, names []string) error {
+	return nil
+})
+
 var migrations = make(map[string]mig)
 var db *sql.DB
 var getApplied = defaultAppliedFunc
 var markApplied = defaultMarkAppliedFunc
+var down = defaultDownFunc
 
 func resetMigrations() {
 	migrations = make(map[string]mig)
@@ -76,6 +82,10 @@ func resetAppliedFunc() {
 
 func resetMarkAppliedFunc() {
 	markApplied = defaultMarkAppliedFunc
+}
+
+func resetDownFunc() {
+	down = defaultDownFunc
 }
 
 func createMigrationsTable(db *sql.DB) error {
@@ -173,4 +183,25 @@ func init() {
 // History func returns chronological history of applied migrations
 func History() ([]string, error) {
 	return getApplied(db)
+}
+
+// Down func reverts particular number of migrations
+// Pass 0 as a number to revert all migrations
+func Down(number int) error {
+	appliedNames, err := getApplied(db)
+	if err != nil {
+		return err
+	}
+
+	if len(appliedNames) == 0 {
+		return nil
+	}
+
+	endIndex := number
+	if number >= len(appliedNames) || number == 0 {
+		endIndex = len(appliedNames)
+	}
+
+	namesToDown := appliedNames[:endIndex]
+	return down(db, namesToDown)
 }
