@@ -18,7 +18,7 @@ You can use direct functions to work with migrations or add cobra's commands to 
 
 To install this package you need to run:
 
-```
+```bash
 go get github.com/iamsalnikov/mymigrate
 ```
 
@@ -26,13 +26,13 @@ go get github.com/iamsalnikov/mymigrate
 
 To work with migrations we need to know a database connection. After opening a connection with DB we need to pass the connection to `mymigrate` package via:
 
-```
+```golang
 mymigrate.SetDatabase(db)
 ```
 
 Example:
 
-```
+```golang
 import (
     "database/sql"
     "log"
@@ -54,7 +54,7 @@ func main() {
 
 To add a new migration to a migration pool we need to call the method `Add` and pass the name of the migration, a function to UP the migration, a function to DOWN the migration. Example:
 
-```
+```golang
 mymigrate.Add(
     "mig_001",
     func (db *sql.DB) error {
@@ -82,7 +82,7 @@ Project structure:
 
 Content of `app/migrations/mig_001.go`:
 
-```
+```golang
 package migrations
 
 import (
@@ -108,7 +108,7 @@ func init() {
 
 Content of `app/main.go`: 
 
-```
+```golang
 import (
     "database/sql"
     "log"
