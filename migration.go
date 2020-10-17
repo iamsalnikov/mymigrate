@@ -11,11 +11,12 @@ import (
 type appliedFunc func(db *sql.DB) ([]string, error)
 type markAppliedFunc func(db *sql.DB, name string) error
 type UpFunc func(db *sql.DB) error
-type DownFunc func(db *sql.DB, names []string) error
+type DownFunc func(db *sql.DB) error
 
 type mig struct {
 	name string
 	up   UpFunc
+	down DownFunc
 }
 
 const migrationsTable = "mymigrations"
@@ -62,9 +63,33 @@ var defaultMarkAppliedFunc = markAppliedFunc(func(db *sql.DB, name string) error
 	return err
 })
 
-var defaultDownFunc = DownFunc(func(db *sql.DB, names []string) error {
+var defaultDownFunc = func(db *sql.DB, names []string) error {
+	err := createMigrationsTable(db)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		mig, ok := migrations[name]
+		if !ok {
+			return fmt.Errorf("can't find migration '%s'", name)
+		}
+
+		err = mig.down(db)
+		if err != nil {
+			return err
+		}
+
+		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+		query := fmt.Sprintf("DELETE FROM %s WHERE name=?", migrationsTable)
+		_, err = db.ExecContext(ctx, query, name)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
-})
+}
 
 var migrations = make(map[string]mig)
 var db *sql.DB
@@ -101,10 +126,11 @@ func createMigrationsTable(db *sql.DB) error {
 
 // Add adds mig to queue
 // Use this function in init()
-func Add(name string, up UpFunc) {
+func Add(name string, up UpFunc, down DownFunc) {
 	migrations[name] = mig{
 		name: name,
 		up:   up,
+		down: down,
 	}
 }
 

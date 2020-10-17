@@ -3,7 +3,6 @@
 package mymigrate
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -14,11 +13,7 @@ func TestHistory_CreatesMigrationTable(t *testing.T) {
 	resetMigrations()
 	db = getDB("test_history_creates_migration_table")
 	_, _ = History()
-	row := db.QueryRow("SHOW TABLES LIKE '%mymigrations%'")
-	var s string
-	row.Scan(&s)
-	fmt.Println(s)
-	if s != "mymigrations" {
+	if !tableExists(db, "mymigrations") {
 		t.Errorf("Не удалось найти таблицу mymigrations после вызова Apply() на чистой БД")
 	}
 	db = nil

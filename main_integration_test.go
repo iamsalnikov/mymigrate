@@ -72,3 +72,10 @@ func getDB(name string) *sql.DB {
 
 	return conn
 }
+
+func tableExists(db *sql.DB, name string) bool {
+	row := db.QueryRow("SHOW TABLES LIKE '%" + name + "%'")
+	var s string
+	row.Scan(&s)
+	return s == name
+}

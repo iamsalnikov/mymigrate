@@ -13,7 +13,7 @@ func Test_MyMigrateNewNames(t *testing.T) {
 	testError := errors.New("test error")
 
 	type testCase struct {
-		newNames      map[string]UpFunc
+		newNames      []string
 		appliedNames  []string
 		applyErr      error
 		expectedErr   error
@@ -22,56 +22,42 @@ func Test_MyMigrateNewNames(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			newNames:      map[string]UpFunc{},
+			newNames:      []string{},
 			appliedNames:  []string{},
 			applyErr:      nil,
 			expectedErr:   nil,
 			expectedNames: []string{},
 		},
 		{
-			newNames: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-			},
+			newNames:      []string{"0"},
 			appliedNames:  []string{},
 			applyErr:      nil,
 			expectedErr:   nil,
 			expectedNames: []string{"0"},
 		},
 		{
-			newNames: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-			},
+			newNames:      []string{"0"},
 			appliedNames:  []string{"0"},
 			applyErr:      nil,
 			expectedErr:   nil,
 			expectedNames: []string{},
 		},
 		{
-			newNames: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-				"1": UpFunc(func(db *sql.DB) error { return nil }),
-				"2": UpFunc(func(db *sql.DB) error { return nil }),
-			},
+			newNames:      []string{"0", "1", "2"},
 			appliedNames:  []string{"0", "2"},
 			applyErr:      nil,
 			expectedErr:   nil,
 			expectedNames: []string{"1"},
 		},
 		{
-			newNames: map[string]UpFunc{
-				"2": UpFunc(func(db *sql.DB) error { return nil }),
-				"1": UpFunc(func(db *sql.DB) error { return nil }),
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-			},
+			newNames:      []string{"2", "1", "0"},
 			appliedNames:  []string{"0"},
 			applyErr:      nil,
 			expectedErr:   nil,
 			expectedNames: []string{"1", "2"},
 		},
 		{
-			newNames: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-			},
+			newNames:      []string{"0"},
 			appliedNames:  []string{"2"},
 			applyErr:      testError,
 			expectedErr:   testError,
@@ -89,8 +75,12 @@ func Test_MyMigrateNewNames(t *testing.T) {
 				return c.appliedNames, c.applyErr
 			}
 
-			for name, mig := range c.newNames {
-				Add(name, mig)
+			for _, name := range c.newNames {
+				Add(
+					name,
+					func(db *sql.DB) error { return nil },
+					func(db *sql.DB) error { return nil },
+				)
 			}
 
 			result, err := NewNames()
@@ -113,8 +103,12 @@ func Test_MyMigrateApply(t *testing.T) {
 	err1 := errors.New("err1")
 	err2 := errors.New("err2")
 
+	type ms struct {
+		up   UpFunc
+		down DownFunc
+	}
 	type testCase struct {
-		migrations       map[string]UpFunc
+		migrations       map[string]ms
 		applyErr         error
 		markAppliedErr   error
 		expectedErr      error
@@ -123,29 +117,32 @@ func Test_MyMigrateApply(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			migrations:       map[string]UpFunc{},
+			migrations:       map[string]ms{},
 			applyErr:         nil,
 			markAppliedErr:   nil,
 			expectedErr:      nil,
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations:       map[string]UpFunc{},
+			migrations:       map[string]ms{},
 			applyErr:         applyErr,
 			markAppliedErr:   nil,
 			expectedErr:      applyErr,
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations:       map[string]UpFunc{},
+			migrations:       map[string]ms{},
 			applyErr:         nil,
 			markAppliedErr:   markAppliedErr,
 			expectedErr:      nil,
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         applyErr,
 			markAppliedErr:   markAppliedErr,
@@ -153,8 +150,11 @@ func Test_MyMigrateApply(t *testing.T) {
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         nil,
 			markAppliedErr:   markAppliedErr,
@@ -162,9 +162,15 @@ func Test_MyMigrateApply(t *testing.T) {
 			expectMarkedCall: map[string]bool{"0": true},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return err1 }),
-				"1": UpFunc(func(db *sql.DB) error { return err2 }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return err1 },
+					down: func(db *sql.DB) error { return nil },
+				},
+				"1": {
+					up:   func(db *sql.DB) error { return err2 },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         nil,
 			markAppliedErr:   nil,
@@ -172,9 +178,15 @@ func Test_MyMigrateApply(t *testing.T) {
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-				"1": UpFunc(func(db *sql.DB) error { return err2 }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
+				"1": {
+					up:   func(db *sql.DB) error { return err2 },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         nil,
 			markAppliedErr:   nil,
@@ -182,9 +194,15 @@ func Test_MyMigrateApply(t *testing.T) {
 			expectMarkedCall: map[string]bool{"0": true},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return err1 }),
-				"1": UpFunc(func(db *sql.DB) error { return nil }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return err1 },
+					down: func(db *sql.DB) error { return nil },
+				},
+				"1": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         nil,
 			markAppliedErr:   nil,
@@ -192,9 +210,15 @@ func Test_MyMigrateApply(t *testing.T) {
 			expectMarkedCall: map[string]bool{},
 		},
 		{
-			migrations: map[string]UpFunc{
-				"0": UpFunc(func(db *sql.DB) error { return nil }),
-				"1": UpFunc(func(db *sql.DB) error { return nil }),
+			migrations: map[string]ms{
+				"0": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
+				"1": {
+					up:   func(db *sql.DB) error { return nil },
+					down: func(db *sql.DB) error { return nil },
+				},
 			},
 			applyErr:         nil,
 			markAppliedErr:   nil,
@@ -227,7 +251,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			}
 
 			for name, mig := range c.migrations {
-				Add(name, mig)
+				Add(name, mig.up, mig.down)
 			}
 
 			err := Apply()

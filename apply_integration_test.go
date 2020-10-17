@@ -68,6 +68,8 @@ func TestApply(t *testing.T) {
 			for _, name := range tc.ToAdd {
 				Add(name, func(db *sql.DB) error {
 					return nil
+				}, func(db *sql.DB) error {
+					return nil
 				})
 			}
 

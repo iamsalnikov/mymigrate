@@ -14,11 +14,7 @@ func TestNewNames_CreatesMigrationTable(t *testing.T) {
 	resetMigrations()
 	db = getDB("test_new_names_creates_migration_table")
 	_, _ = NewNames()
-	row := db.QueryRow("SHOW TABLES LIKE '%mymigrations%'")
-	var s string
-	row.Scan(&s)
-	fmt.Println(s)
-	if s != "mymigrations" {
+	if !tableExists(db, "mymigrations") {
 		t.Errorf("Не удалось найти таблицу mymigrations после вызова NewNames() на чистой БД")
 	}
 	db = nil
@@ -27,68 +23,44 @@ func TestNewNames_CreatesMigrationTable(t *testing.T) {
 func TestNewNames(t *testing.T) {
 	type testCase struct {
 		AppliedNames []string
-		ToAdd        map[string]UpFunc
+		ToAdd        []string
 		Exp          []string
 	}
 
 	testCases := []testCase{
 		{
 			AppliedNames: []string{},
-			ToAdd: map[string]UpFunc{
-				"m_001": func(db *sql.DB) error {
-					return nil
-				},
-				"m_002": func(db *sql.DB) error {
-					return nil
-				},
-				"m_003": func(db *sql.DB) error {
-					return nil
-				},
+			ToAdd: []string{
+				"m_001",
+				"m_002",
+				"m_003",
 			},
 			Exp: []string{"m_001", "m_002", "m_003"},
 		},
 		{
 			AppliedNames: []string{"m_005"},
-			ToAdd: map[string]UpFunc{
-				"m_001": func(db *sql.DB) error {
-					return nil
-				},
-				"m_002": func(db *sql.DB) error {
-					return nil
-				},
-				"m_003": func(db *sql.DB) error {
-					return nil
-				},
+			ToAdd: []string{
+				"m_001",
+				"m_002",
+				"m_003",
 			},
 			Exp: []string{"m_001", "m_002", "m_003"},
 		},
 		{
 			AppliedNames: []string{"m_002"},
-			ToAdd: map[string]UpFunc{
-				"m_001": func(db *sql.DB) error {
-					return nil
-				},
-				"m_002": func(db *sql.DB) error {
-					return nil
-				},
-				"m_003": func(db *sql.DB) error {
-					return nil
-				},
+			ToAdd: []string{
+				"m_001",
+				"m_002",
+				"m_003",
 			},
 			Exp: []string{"m_001", "m_003"},
 		},
 		{
 			AppliedNames: []string{"m_002", "m_001", "m_003"},
-			ToAdd: map[string]UpFunc{
-				"m_001": func(db *sql.DB) error {
-					return nil
-				},
-				"m_002": func(db *sql.DB) error {
-					return nil
-				},
-				"m_003": func(db *sql.DB) error {
-					return nil
-				},
+			ToAdd: []string{
+				"m_001",
+				"m_002",
+				"m_003",
 			},
 			Exp: []string{},
 		},
@@ -104,8 +76,12 @@ func TestNewNames(t *testing.T) {
 				_ = defaultMarkAppliedFunc(db, appliedName)
 			}
 
-			for name, up := range tc.ToAdd {
-				Add(name, up)
+			for _, name := range tc.ToAdd {
+				Add(
+					name,
+					func(db *sql.DB) error { return nil },
+					func(db *sql.DB) error { return nil },
+				)
 			}
 
 			newNames, _ := NewNames()
