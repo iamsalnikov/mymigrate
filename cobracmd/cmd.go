@@ -9,5 +9,5 @@ var MigrateCmd = &cobra.Command{
 }
 
 func init() {
-	MigrateCmd.AddCommand(CreateCmd, HistoryCmd, NewListCmd, ApplyCmd)
+	MigrateCmd.AddCommand(CreateCmd, HistoryCmd, NewListCmd, ApplyCmd, DownCmd)
 }
