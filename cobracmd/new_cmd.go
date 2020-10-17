@@ -16,7 +16,7 @@ var NewListCmd = &cobra.Command{
 
 // NewListRunE is a cobra run function for NewListCmd command
 func NewListRunE(cmd *cobra.Command, args []string) error {
-	list, err := mymigrate.History()
+	list, err := mymigrate.NewNames()
 	if err != nil {
 		return err
 	}
