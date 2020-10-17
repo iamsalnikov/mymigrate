@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-type appliedFunc func(db *sql.DB) ([]string, error)
-type markAppliedFunc func(db *sql.DB, name string) error
 type UpFunc func(db *sql.DB) error
 type DownFunc func(db *sql.DB) error
 
@@ -21,7 +19,20 @@ type mig struct {
 
 const migrationsTable = "mymigrations"
 
-var defaultAppliedFunc = appliedFunc(func(db *sql.DB) ([]string, error) {
+var (
+	// set of project's migrations
+	migrations = make(map[string]mig)
+	// database connection
+	db *sql.DB
+	// function to get list of applied migrations
+	getApplied = defaultAppliedFunc
+	// function to mark migration as aplied
+	markApplied = defaultMarkAppliedFunc
+	// function to down migrations
+	down = defaultDownFunc
+)
+
+func defaultAppliedFunc(db *sql.DB) ([]string, error) {
 	err := createMigrationsTable(db)
 	if err != nil {
 		return nil, err
@@ -48,9 +59,9 @@ var defaultAppliedFunc = appliedFunc(func(db *sql.DB) ([]string, error) {
 	}
 
 	return res, nil
-})
+}
 
-var defaultMarkAppliedFunc = markAppliedFunc(func(db *sql.DB, name string) error {
+func defaultMarkAppliedFunc(db *sql.DB, name string) error {
 	err := createMigrationsTable(db)
 	if err != nil {
 		return err
@@ -61,9 +72,9 @@ var defaultMarkAppliedFunc = markAppliedFunc(func(db *sql.DB, name string) error
 	_, err = db.ExecContext(ctx, query, name, time.Now())
 
 	return err
-})
+}
 
-var defaultDownFunc = func(db *sql.DB, names []string) error {
+func defaultDownFunc(db *sql.DB, names []string) error {
 	err := createMigrationsTable(db)
 	if err != nil {
 		return err
@@ -89,28 +100,6 @@ var defaultDownFunc = func(db *sql.DB, names []string) error {
 	}
 
 	return nil
-}
-
-var migrations = make(map[string]mig)
-var db *sql.DB
-var getApplied = defaultAppliedFunc
-var markApplied = defaultMarkAppliedFunc
-var down = defaultDownFunc
-
-func resetMigrations() {
-	migrations = make(map[string]mig)
-}
-
-func resetAppliedFunc() {
-	getApplied = defaultAppliedFunc
-}
-
-func resetMarkAppliedFunc() {
-	markApplied = defaultMarkAppliedFunc
-}
-
-func resetDownFunc() {
-	down = defaultDownFunc
 }
 
 func createMigrationsTable(db *sql.DB) error {
@@ -187,6 +176,10 @@ func Apply() error {
 
 // Template func returns a new migration template
 func Template(pkg, name string) string {
+	if len(pkg) == 0 {
+		pkg = "migrations"
+	}
+
 	template := `package %s
 
 import (
@@ -196,9 +189,18 @@ import (
 )
 
 func init() {
-	mymigrate.Add("%s", migration.UpFunc(func(db *sql.DB) error {
-		return nil
-	}))
+	mymigrate.Add(
+		"%s",
+		func(db *sql.DB) error {
+			// TODO: write UP logic
+			return nil
+		},
+		func(db *sql.DB) error {
+			// TODO: write down logic
+
+			return nil
+		},
+	)
 }
 `
 
