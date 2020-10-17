@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-type AppliedFunc func(db *sql.DB) ([]string, error)
-type MarkAppliedFunc func(db *sql.DB, name string) error
+type appliedFunc func(db *sql.DB) ([]string, error)
+type markAppliedFunc func(db *sql.DB, name string) error
 type UpFunc func(db *sql.DB) error
 type DownFunc func(db *sql.DB, names []string) error
 
@@ -20,7 +20,7 @@ type mig struct {
 
 const migrationsTable = "mymigrations"
 
-var defaultAppliedFunc = AppliedFunc(func(db *sql.DB) ([]string, error) {
+var defaultAppliedFunc = appliedFunc(func(db *sql.DB) ([]string, error) {
 	err := createMigrationsTable(db)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ var defaultAppliedFunc = AppliedFunc(func(db *sql.DB) ([]string, error) {
 	return res, nil
 })
 
-var defaultMarkAppliedFunc = MarkAppliedFunc(func(db *sql.DB, name string) error {
+var defaultMarkAppliedFunc = markAppliedFunc(func(db *sql.DB, name string) error {
 	err := createMigrationsTable(db)
 	if err != nil {
 		return err
