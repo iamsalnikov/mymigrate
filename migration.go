@@ -180,8 +180,13 @@ func Apply() ([]string, error) {
 	return applied, nil
 }
 
-// Template func returns a new migration template
-func Template(pkg, name string) string {
+// datedMigrationName returns dated migration name
+func datedMigrationName(name string) string {
+	return fmt.Sprintf("%s-%s", time.Now().Format("20060102-150405"), name)
+}
+
+// Template func returns a new migration template and the name of the migration
+func Template(pkg, name string) (string, string) {
 	if len(pkg) == 0 {
 		pkg = "migrations"
 	}
@@ -210,8 +215,8 @@ func init() {
 }
 `
 
-	name = fmt.Sprintf("%s-%s", time.Now().Format("20060102-150405"), name)
-	return fmt.Sprintf(template, pkg, name)
+	name = datedMigrationName(name)
+	return fmt.Sprintf(template, pkg, name), name
 }
 
 // History func returns chronological history of applied migrations
