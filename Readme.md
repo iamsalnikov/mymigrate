@@ -2,6 +2,13 @@
 
 Yet another migration library for golang.
 
+- [Why](#why)
+- [How to use it](#how-to-use-it)
+  - [Installation](#installation)
+  - [Setup a database connection](#setup-a-database-connection)
+  - [Add migrations](#add-migrations)
+  - [Apply, Down, View history with direct commands](#apply-down-view-history-with-direct-commands)
+
 ## Why
 <img align="left" width="150" height="130" src="https://www.meme-arsenal.com/memes/7d70b26fc3a93cd663768d1c52a445b5.jpg">
 Sometimes we need to perform some complex logic during migration, such as receiving data from an external resource, complex data mapping, and so on. 
