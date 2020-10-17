@@ -1,6 +1,7 @@
 package cobracmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -194,4 +195,18 @@ func TestCreateRunE_CreatesMigrationFile(t *testing.T) {
 			_ = os.RemoveAll(tc.dirWithMigration)
 		})
 	}
+}
+
+func TestCreateRunE_Out(t *testing.T) {
+	out := bytes.NewBufferString("")
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(out)
+	err := CreateRunE(cmd, []string{"hello"})
+
+	assert.Nil(t, err)
+
+	outStr := out.String()
+	assert.Contains(t, outStr, "New migration file is here:")
+	assert.Contains(t, outStr, "hello.go")
 }

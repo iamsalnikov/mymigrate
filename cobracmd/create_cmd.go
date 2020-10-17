@@ -2,6 +2,7 @@ package cobracmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -61,6 +62,8 @@ func CreateRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "New migration file is here: %s\n", migFilePath)
 
 	return nil
 }
