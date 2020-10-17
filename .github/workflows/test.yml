@@ -31,3 +31,6 @@ jobs:
 
     - name: Integration tests
       run: go test -v -tags=integration .
+
+    - name: Lint
+      run: golint -set_exit_status ./...

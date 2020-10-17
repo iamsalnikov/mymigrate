@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
+// UpFunc is a function that ups migration
 type UpFunc func(db *sql.DB) error
+
+// DownFunc is a function that downs migration
 type DownFunc func(db *sql.DB) error
 
 type mig struct {
