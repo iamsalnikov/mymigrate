@@ -5,7 +5,7 @@ Yet another migration library for golang.
 ## Why
 
 Sometimes we need to perform some complex logic during migration, such as receiving data from an external resource, complex data mapping, and so on. 
-I've tried to find a tool that will allow me to do these things, but I've failed (maybe because I did look for it well enough).
+I've tried to find a tool that will allow me to do these things, but I've failed (maybe because I didn't look for it well enough).
 So I've decided to write a simple migration tool that will allow you to write migrations in golang and work with an app's DB connection.
 
 It works with golang's SQL package, so, theoretically, it may work with any SQL DB (I've tested it only with MySQL).
