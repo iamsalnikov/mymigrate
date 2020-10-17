@@ -5,6 +5,7 @@ Yet another migration library for golang.
 ## Why
 <img align="left" width="150" height="130" src="https://www.meme-arsenal.com/memes/7d70b26fc3a93cd663768d1c52a445b5.jpg">
 Sometimes we need to perform some complex logic during migration, such as receiving data from an external resource, complex data mapping, and so on. 
+
 I've tried to find a tool that will allow me to do these things, but I've failed (maybe because I didn't look for it well enough).
 So I've decided to write a simple migration tool that will allow you to write migrations in golang and work with an app's DB connection.
 
