@@ -8,6 +8,7 @@ Yet another migration library for golang.
   - [Setup a database connection](#setup-a-database-connection)
   - [Add migrations](#add-migrations)
   - [Apply, Down, View history with direct commands](#apply-down-view-history-with-direct-commands)
+  - [Cobra commands](#cobra-commands)
 
 ## Why
 <img align="left" width="150" height="130" src="https://www.meme-arsenal.com/memes/7d70b26fc3a93cd663768d1c52a445b5.jpg">
@@ -147,3 +148,17 @@ To Apply migrations with direct command we need to run `mymigrate.Apply()` funct
 To Down migrations with direct command we need to run `mymigrate.Down(int)` function and pass number of migrations to be downed. It will return a list of downed migrations and an error.
 
 To view a history of applied migrations with direct command we need to run `mymigrate.History()`. It will return a list of applied migrations and an error.
+
+### Cobra commands
+
+If you use [spf13/cobra](https://github.com/spf13/cobra) package to build nice CLI app then there is one piece of good new for you: this package has commands to work with migrations. You can find them at [cobracmd](cobracmd) directory.
+
+Package `github.com/iamsalnikov/mymigrate/cobracmd` export next commands:
+- [ApplyCmd](cobracmd/apply_cmd.go) - command to apply new migrations
+- [CreateCmd](cobracmd/create_cmd.go) - command to create new migration
+- [DownCmd](cobracmd/down_cmd.go) - command to down applied migrations
+- [HistoryCmd](cobracmd/history_cmd.go) - command to view a list of applied migrations
+- [NewListCmd](cobracmd/new_cmd.go) - command to view a list of new migrations
+- [MigrateCmd](cobracmd/cmd.go) - root command to work with migrations
+
+Also you can find at `github.com/iamsalnikov/mymigrate/cobracmd` functions for cobra commands if you want to configure commands by yourself.
