@@ -31,7 +31,7 @@ func TestDown_ChangesHistory(t *testing.T) {
 	Add("mig_3", stub, stub)
 	Add("mig_4", stub, stub)
 
-	err := Apply()
+	_, err := Apply()
 	assert.Nil(t, err, "Unexpected error during apply")
 
 	err = Down(2)
@@ -112,7 +112,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 				})
 			}
 
-			err := Apply()
+			_, err := Apply()
 			assert.Nil(t, err, "Unexpected error during apply")
 
 			err = Down(tc.downNumber)

@@ -113,6 +113,7 @@ func Test_MyMigrateApply(t *testing.T) {
 		markAppliedErr   error
 		expectedErr      error
 		expectMarkedCall map[string]bool
+		expectedToApply  []string
 	}
 
 	testCases := []testCase{
@@ -122,6 +123,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      nil,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations:       map[string]ms{},
@@ -129,6 +131,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      applyErr,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations:       map[string]ms{},
@@ -136,6 +139,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   markAppliedErr,
 			expectedErr:      nil,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations: map[string]ms{
@@ -148,6 +152,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   markAppliedErr,
 			expectedErr:      applyErr,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations: map[string]ms{
@@ -160,6 +165,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   markAppliedErr,
 			expectedErr:      markAppliedErr,
 			expectMarkedCall: map[string]bool{"0": true},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations: map[string]ms{
@@ -176,6 +182,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      err1,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations: map[string]ms{
@@ -192,6 +199,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      err2,
 			expectMarkedCall: map[string]bool{"0": true},
+			expectedToApply:  []string{"0"},
 		},
 		{
 			migrations: map[string]ms{
@@ -208,6 +216,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      err1,
 			expectMarkedCall: map[string]bool{},
+			expectedToApply:  []string{},
 		},
 		{
 			migrations: map[string]ms{
@@ -224,6 +233,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      nil,
 			expectMarkedCall: map[string]bool{"0": true, "1": true},
+			expectedToApply:  []string{"0", "1"},
 		},
 	}
 
@@ -254,15 +264,15 @@ func Test_MyMigrateApply(t *testing.T) {
 				Add(name, mig.up, mig.down)
 			}
 
-			err := Apply()
-			if err != c.expectedErr {
-				t.Errorf("I expected to get error \"%v\" but got \"%v\"", c.expectedErr, err)
-			}
+			applied, err := Apply()
+			assert.EqualValues(t, c.expectedErr, err)
 
 			if len(markedCall) != len(c.expectMarkedCall) {
 				t.Errorf("I expected that these migrations (%+v) we will try to mark as applied. "+
 					"But we tried to mark as applied %+v", c.expectMarkedCall, markedCall)
 			}
+
+			assert.EqualValues(t, c.expectedToApply, applied)
 		})
 	}
 }

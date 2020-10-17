@@ -153,25 +153,28 @@ func NewNames() ([]string, error) {
 }
 
 // Apply func applies migrations
-func Apply() error {
+func Apply() ([]string, error) {
 	newNames, err := NewNames()
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
+	applied := make([]string, 0, len(newNames))
 	for _, name := range newNames {
 		err = migrations[name].up(db)
 		if err != nil {
-			return err
+			return applied, err
 		}
 
 		err = markApplied(db, name)
 		if err != nil {
-			return err
+			return applied, err
 		}
+
+		applied = append(applied, name)
 	}
 
-	return nil
+	return applied, nil
 }
 
 // Template func returns a new migration template

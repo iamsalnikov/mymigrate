@@ -14,7 +14,7 @@ import (
 func TestApply_CreatesMigrationTable(t *testing.T) {
 	resetMigrations()
 	db = getDB("test_apply_creates_migration_table")
-	_ = Apply()
+	_, _ = Apply()
 	row := db.QueryRow("SHOW TABLES LIKE '%mymigrations%'")
 	var s string
 	row.Scan(&s)
@@ -27,31 +27,36 @@ func TestApply_CreatesMigrationTable(t *testing.T) {
 
 func TestApply(t *testing.T) {
 	type testCase struct {
-		AppliedNames []string
-		ToAdd        []string
-		Exp          []string
+		appliedNames        []string
+		toAdd               []string
+		expAppliedToHistory []string
+		expJustApplied      []string
 	}
 
 	testCases := []testCase{
 		{
-			AppliedNames: []string{},
-			ToAdd:        []string{"m_001"},
-			Exp:          []string{"m_001"},
+			appliedNames:        []string{},
+			toAdd:               []string{"m_001"},
+			expAppliedToHistory: []string{"m_001"},
+			expJustApplied:      []string{"m_001"},
 		},
 		{
-			AppliedNames: []string{"m_001", "m_002"},
-			ToAdd:        []string{},
-			Exp:          []string{"m_002", "m_001"},
+			appliedNames:        []string{"m_001", "m_002"},
+			toAdd:               []string{},
+			expAppliedToHistory: []string{"m_002", "m_001"},
+			expJustApplied:      []string{},
 		},
 		{
-			AppliedNames: []string{"m_001", "m_002"},
-			ToAdd:        []string{"m_001", "m_002"},
-			Exp:          []string{"m_002", "m_001"},
+			appliedNames:        []string{"m_001", "m_002"},
+			toAdd:               []string{"m_001", "m_002"},
+			expAppliedToHistory: []string{"m_002", "m_001"},
+			expJustApplied:      []string{},
 		},
 		{
-			AppliedNames: []string{"m_001", "m_002"},
-			ToAdd:        []string{"m_001", "m_002", "m_003", "m_004"},
-			Exp:          []string{"m_004", "m_003", "m_002", "m_001"},
+			appliedNames:        []string{"m_001", "m_002"},
+			toAdd:               []string{"m_001", "m_002", "m_003", "m_004"},
+			expAppliedToHistory: []string{"m_004", "m_003", "m_002", "m_001"},
+			expJustApplied:      []string{"m_003", "m_004"},
 		},
 	}
 
@@ -61,11 +66,11 @@ func TestApply(t *testing.T) {
 		t.Run(dbn, func(t *testing.T) {
 			db = getDB(dbn)
 
-			for _, appliedName := range tc.AppliedNames {
+			for _, appliedName := range tc.appliedNames {
 				_ = defaultMarkAppliedFunc(db, appliedName)
 			}
 
-			for _, name := range tc.ToAdd {
+			for _, name := range tc.toAdd {
 				Add(name, func(db *sql.DB) error {
 					return nil
 				}, func(db *sql.DB) error {
@@ -73,10 +78,12 @@ func TestApply(t *testing.T) {
 				})
 			}
 
-			_ = Apply()
+			justApplied, err := Apply()
+			assert.Nil(t, err, "Unexpected error during apply")
 			applied, _ := History()
 
-			assert.EqualValues(t, tc.Exp, applied)
+			assert.EqualValues(t, tc.expAppliedToHistory, applied)
+			assert.EqualValues(t, tc.expJustApplied, justApplied)
 		})
 	}
 }
