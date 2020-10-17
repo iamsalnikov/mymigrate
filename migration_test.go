@@ -370,15 +370,16 @@ func Test_MyMigrateDown(t *testing.T) {
 			}
 
 			isDownCalled := false
-			down = func(db *sql.DB, names []string) error {
-				assert.EqualValues(t, tc.expDownNames, names, "проверка на ожидаемые миграции для отката")
+			down = func(db *sql.DB, names []string) ([]string, error) {
+				assert.EqualValues(t, tc.expDownNames, names, "check on expected migrations to down")
 				isDownCalled = true
-				return tc.downErr
+				return tc.expDownNames, tc.downErr
 			}
 
-			err := Down(tc.downCount)
-			assert.EqualValues(t, tc.expErr, err, "проверка на ожидаемую ошибку")
-			assert.EqualValues(t, tc.expDownCalled, isDownCalled, "проверка навызов функции down")
+			downed, err := Down(tc.downCount)
+			assert.EqualValues(t, tc.expErr, err, "check on expected error")
+			assert.EqualValues(t, tc.expDownCalled, isDownCalled, "check on down called")
+			assert.EqualValues(t, tc.expDownNames, downed, "check on downed migrations list")
 		})
 	}
 

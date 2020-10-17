@@ -14,7 +14,7 @@ import (
 func TestDown_CreatesMigrationTable(t *testing.T) {
 	resetMigrations()
 	db = getDB("test_down_creates_migration_table")
-	_ = Down(1)
+	_, _ = Down(1)
 	if !tableExists(db, "mymigrations") {
 		t.Errorf("Can't find table 'mymigrations' after calling Down() on clean DB")
 	}
@@ -34,13 +34,14 @@ func TestDown_ChangesHistory(t *testing.T) {
 	_, err := Apply()
 	assert.Nil(t, err, "Unexpected error during apply")
 
-	err = Down(2)
+	downed, err := Down(2)
 	assert.Nil(t, err, "Unexpected error during down")
 
 	history, err := History()
 	assert.Nil(t, err, "Unexpected error during history")
 
 	assert.EqualValues(t, []string{"mig_2", "mig_1"}, history)
+	assert.EqualValues(t, []string{"mig_4", "mig_3"}, downed)
 }
 
 func TestDown_RevertsMigrations(t *testing.T) {
@@ -50,6 +51,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 		expHistory        []string
 		expExistingTables []string
 		expDeletedTables  []string
+		expDowned         []string
 	}
 
 	testCases := map[string]testCase{
@@ -59,6 +61,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 			expHistory:        []string{},
 			expExistingTables: []string{},
 			expDeletedTables:  []string{},
+			expDowned:         []string{},
 		},
 		"three applied migrations and one reverted": {
 			migrations: map[string]string{
@@ -70,6 +73,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 			expHistory:        []string{"mig_002", "mig_001"},
 			expExistingTables: []string{"table_001", "table_002"},
 			expDeletedTables:  []string{"table_003"},
+			expDowned:         []string{"mig_003"},
 		},
 		"three applied migrations and two reverted": {
 			migrations: map[string]string{
@@ -81,6 +85,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 			expHistory:        []string{"mig_001"},
 			expExistingTables: []string{"table_001"},
 			expDeletedTables:  []string{"table_003", "table_002"},
+			expDowned:         []string{"mig_003", "mig_002"},
 		},
 		"three applied migrations and three reverted": {
 			migrations: map[string]string{
@@ -92,6 +97,7 @@ func TestDown_RevertsMigrations(t *testing.T) {
 			expHistory:        []string{},
 			expExistingTables: []string{},
 			expDeletedTables:  []string{"table_003", "table_002", "table_001"},
+			expDowned:         []string{"mig_003", "mig_002", "mig_001"},
 		},
 	}
 
@@ -115,8 +121,9 @@ func TestDown_RevertsMigrations(t *testing.T) {
 			_, err := Apply()
 			assert.Nil(t, err, "Unexpected error during apply")
 
-			err = Down(tc.downNumber)
+			downed, err := Down(tc.downNumber)
 			assert.Nil(t, err, "Unexpected error during down")
+			assert.EqualValues(t, tc.expDowned, downed)
 
 			history, err := History()
 			assert.Nil(t, err, "Unexpected error during history")

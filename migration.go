@@ -74,32 +74,35 @@ func defaultMarkAppliedFunc(db *sql.DB, name string) error {
 	return err
 }
 
-func defaultDownFunc(db *sql.DB, names []string) error {
+func defaultDownFunc(db *sql.DB, names []string) ([]string, error) {
 	err := createMigrationsTable(db)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
+	downed := make([]string, 0, len(names))
 	for _, name := range names {
 		mig, ok := migrations[name]
 		if !ok {
-			return fmt.Errorf("can't find migration '%s'", name)
+			return downed, fmt.Errorf("can't find migration '%s'", name)
 		}
 
 		err = mig.down(db)
 		if err != nil {
-			return err
+			return downed, err
 		}
 
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		query := fmt.Sprintf("DELETE FROM %s WHERE name=?", migrationsTable)
 		_, err = db.ExecContext(ctx, query, name)
 		if err != nil {
-			return err
+			return downed, err
 		}
+
+		downed = append(downed, name)
 	}
 
-	return nil
+	return downed, nil
 }
 
 func createMigrationsTable(db *sql.DB) error {
@@ -218,14 +221,14 @@ func History() ([]string, error) {
 
 // Down func reverts particular number of migrations
 // Pass 0 as a number to revert all migrations
-func Down(number int) error {
+func Down(number int) ([]string, error) {
 	appliedNames, err := getApplied(db)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
 	if len(appliedNames) == 0 {
-		return nil
+		return []string{}, nil
 	}
 
 	endIndex := number
