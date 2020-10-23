@@ -18,6 +18,11 @@ var CreateCmd = &cobra.Command{
 	RunE:  CreateRunE,
 }
 
+func init() {
+	CreateCmd.Flags().String("package", "migrations", "name of migratins package")
+	CreateCmd.Flags().String("path", "", "path to migrations dir")
+}
+
 // CreateRunE is a cobra run function to create new migration file
 func CreateRunE(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
