@@ -15,6 +15,7 @@ import (
 var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create a new migration file",
+	RunE:  CreateRunE,
 }
 
 // CreateRunE is a cobra run function to create new migration file
