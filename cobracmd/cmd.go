@@ -6,6 +6,7 @@ import "github.com/spf13/cobra"
 var MigrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "work with migrations",
+	RunE:  CreateRunE,
 }
 
 func init() {
