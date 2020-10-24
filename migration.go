@@ -45,7 +45,7 @@ func defaultAppliedFunc(db *sql.DB) ([]string, error) {
 	query := fmt.Sprintf("SELECT name FROM %s ORDER BY time DESC, name DESC", migrationsTable)
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -55,7 +55,7 @@ func defaultAppliedFunc(db *sql.DB) ([]string, error) {
 		var name string
 		err := rows.Scan(&name)
 		if err != nil {
-			return []string{}, nil
+			return nil, err
 		}
 
 		res = append(res, name)
@@ -80,7 +80,7 @@ func defaultMarkAppliedFunc(db *sql.DB, name string) error {
 func defaultDownFunc(db *sql.DB, names []string) ([]string, error) {
 	err := createMigrationsTable(db)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	downed := make([]string, 0, len(names))
@@ -138,7 +138,7 @@ func SetDatabase(database *sql.DB) {
 func NewNames() ([]string, error) {
 	appliedNames, err := getApplied(db)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	applied := map[string]bool{}
@@ -162,7 +162,7 @@ func NewNames() ([]string, error) {
 func Apply() ([]string, error) {
 	newNames, err := NewNames()
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	applied := make([]string, 0, len(newNames))
@@ -232,7 +232,7 @@ func History() ([]string, error) {
 func Down(number int) ([]string, error) {
 	appliedNames, err := getApplied(db)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 
 	if len(appliedNames) == 0 {

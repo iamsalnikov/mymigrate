@@ -131,7 +131,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   nil,
 			expectedErr:      applyErr,
 			expectMarkedCall: map[string]bool{},
-			expectedToApply:  []string{},
+			expectedToApply:  nil,
 		},
 		{
 			migrations:       map[string]ms{},
@@ -152,7 +152,7 @@ func Test_MyMigrateApply(t *testing.T) {
 			markAppliedErr:   markAppliedErr,
 			expectedErr:      applyErr,
 			expectMarkedCall: map[string]bool{},
-			expectedToApply:  []string{},
+			expectedToApply:  nil,
 		},
 		{
 			migrations: map[string]ms{
@@ -300,7 +300,7 @@ func Test_MyMigrateDown(t *testing.T) {
 			applied:       []string{},
 			appliedErr:    errors.New("hello"),
 			downCount:     0,
-			expDownNames:  []string{},
+			expDownNames:  nil,
 			downErr:       nil,
 			expErr:        errors.New("hello"),
 			expDownCalled: false,
