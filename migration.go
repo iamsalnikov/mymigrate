@@ -2,31 +2,16 @@ package mymigrate
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sort"
 	"time"
 )
 
-// UpFunc is a function that ups migration
-type UpFunc func(db *sql.DB) error
-
-// DownFunc is a function that downs migration
-type DownFunc func(db *sql.DB) error
-
-type mig struct {
-	name string
-	up   UpFunc
-	down DownFunc
-}
-
-const migrationsTable = "mymigrations"
-
 var (
 	// set of project's migrations
 	migrations = make(map[string]mig)
-	// database connection
-	db *sql.DB
+	// database provider
+	dbProvider DbProvider
 	// function to get list of applied migrations
 	getApplied = defaultAppliedFunc
 	// function to mark migration as aplied
@@ -35,50 +20,30 @@ var (
 	down = defaultDownFunc
 )
 
-func defaultAppliedFunc(db *sql.DB) ([]string, error) {
-	err := createMigrationsTable(db)
+func defaultAppliedFunc(provider DbProvider) ([]string, error) {
+	err := provider.CreateMigrationsTable()
 	if err != nil {
 		return nil, err
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	query := fmt.Sprintf("SELECT name FROM %s ORDER BY time DESC, name DESC", migrationsTable)
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
 
-	defer rows.Close()
-
-	res := make([]string, 0)
-	for rows.Next() {
-		var name string
-		err := rows.Scan(&name)
-		if err != nil {
-			return nil, err
-		}
-
-		res = append(res, name)
-	}
-
-	return res, nil
+	return provider.GetApplied(ctx)
 }
 
-func defaultMarkAppliedFunc(db *sql.DB, name string) error {
-	err := createMigrationsTable(db)
+func defaultMarkAppliedFunc(provider DbProvider, name string) error {
+	err := provider.CreateMigrationsTable()
 	if err != nil {
 		return err
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	query := fmt.Sprintf("INSERT INTO %s (name, time) VALUES (?, ?)", migrationsTable)
-	_, err = db.ExecContext(ctx, query, name, time.Now())
 
-	return err
+	return provider.MarkApplied(ctx, name, time.Now())
 }
 
-func defaultDownFunc(db *sql.DB, names []string) ([]string, error) {
-	err := createMigrationsTable(db)
+func defaultDownFunc(provider DbProvider, names []string) ([]string, error) {
+	err := provider.CreateMigrationsTable()
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +55,13 @@ func defaultDownFunc(db *sql.DB, names []string) ([]string, error) {
 			return downed, fmt.Errorf("can't find migration '%s'", name)
 		}
 
-		err = mig.down(db)
+		err = mig.down(provider.GetDb())
 		if err != nil {
 			return downed, err
 		}
 
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-		query := fmt.Sprintf("DELETE FROM %s WHERE name=?", migrationsTable)
-		_, err = db.ExecContext(ctx, query, name)
+		err = provider.DeleteApplied(ctx, name)
 		if err != nil {
 			return downed, err
 		}
@@ -106,17 +70,6 @@ func defaultDownFunc(db *sql.DB, names []string) ([]string, error) {
 	}
 
 	return downed, nil
-}
-
-func createMigrationsTable(db *sql.DB) error {
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-		name VARCHAR(500) NOT NULL unique,
-		time timestamp,
-		PRIMARY KEY (name)
-	) engine=InnoDB`, migrationsTable)
-
-	_, err := db.Exec(query)
-	return err
 }
 
 // Add adds mig to queue
@@ -129,14 +82,14 @@ func Add(name string, up UpFunc, down DownFunc) {
 	}
 }
 
-// SetDatabase sets a database that we should use for applying migrations
-func SetDatabase(database *sql.DB) {
-	db = database
+// SetDatabaseProvider sets a DbProvider that we should use for applying migrations
+func SetDatabaseProvider(provider DbProvider) {
+	dbProvider = provider
 }
 
 // NewNames returns names of new migrations
 func NewNames() ([]string, error) {
-	appliedNames, err := getApplied(db)
+	appliedNames, err := getApplied(dbProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +120,12 @@ func Apply() ([]string, error) {
 
 	applied := make([]string, 0, len(newNames))
 	for _, name := range newNames {
-		err = migrations[name].up(db)
+		err = migrations[name].up(dbProvider.GetDb())
 		if err != nil {
 			return applied, err
 		}
 
-		err = markApplied(db, name)
+		err = markApplied(dbProvider, name)
 		if err != nil {
 			return applied, err
 		}
@@ -224,13 +177,13 @@ func init() {
 
 // History func returns chronological history of applied migrations
 func History() ([]string, error) {
-	return getApplied(db)
+	return getApplied(dbProvider)
 }
 
 // Down func reverts particular number of migrations
 // Pass 0 as a number to revert all migrations
 func Down(number int) ([]string, error) {
-	appliedNames, err := getApplied(db)
+	appliedNames, err := getApplied(dbProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -245,5 +198,5 @@ func Down(number int) ([]string, error) {
 	}
 
 	namesToDown := appliedNames[:endIndex]
-	return down(db, namesToDown)
+	return down(dbProvider, namesToDown)
 }
