@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/iamsalnikov/mymigrate/migrationtest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,7 +73,7 @@ func Test_MyMigrateNewNames(t *testing.T) {
 		resetMarkAppliedFunc()
 
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			getApplied = func(db *sql.DB) ([]string, error) {
+			getApplied = func(provider DbProvider) ([]string, error) {
 				return c.appliedNames, c.applyErr
 			}
 
@@ -243,14 +245,20 @@ func Test_MyMigrateApply(t *testing.T) {
 		resetMarkAppliedFunc()
 
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			provider := migrationtest.NewMockDbProvider(ctrl)
+			provider.EXPECT().GetDb().AnyTimes()
+
+			SetDatabaseProvider(provider)
+
 			// we've already tested NewNames() function
 			// so, here we will return always empty slice
-			getApplied = func(db *sql.DB) ([]string, error) {
+			getApplied = func(provider DbProvider) ([]string, error) {
 				return []string{}, c.applyErr
 			}
 
 			markedCall := make(map[string]bool)
-			markApplied = func(db *sql.DB, name string) error {
+			markApplied = func(provider DbProvider, name string) error {
 				if !c.expectMarkedCall[name] {
 					t.Errorf("I didn't excpect that mig '%s' will be marked as aplied", name)
 				}
@@ -365,12 +373,12 @@ func Test_MyMigrateDown(t *testing.T) {
 		t.Run(tcName, func(t *testing.T) {
 			defer reset()
 
-			getApplied = func(db *sql.DB) ([]string, error) {
+			getApplied = func(provider DbProvider) ([]string, error) {
 				return tc.applied, tc.appliedErr
 			}
 
 			isDownCalled := false
-			down = func(db *sql.DB, names []string) ([]string, error) {
+			down = func(provider DbProvider, names []string) ([]string, error) {
 				assert.EqualValues(t, tc.expDownNames, names, "check on expected migrations to down")
 				isDownCalled = true
 				return tc.expDownNames, tc.downErr
