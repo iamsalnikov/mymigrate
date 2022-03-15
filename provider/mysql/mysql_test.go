@@ -21,12 +21,12 @@ func TestMysqlProvider_CreateMigrationsTable(t *testing.T) {
 	}{
 		"All is ok": {
 			execError:   nil,
-			expectQuery: fmt.Sprintf("create table if not exists %s ( name varchar(500) not null constraint %s_pk primary key, time timestamp ); create unique index if not exists %s_name_uindex on %s (name);", provider.DefaultTableName, provider.DefaultTableName, provider.DefaultTableName, provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ( name VARCHAR(500) NOT NULL unique, time timestamp, PRIMARY KEY (name) ) engine=InnoDB", provider.DefaultTableName),
 			expectErr:   nil,
 		},
 		"db error": {
 			execError:   errors.New("some db error"),
-			expectQuery: fmt.Sprintf("create table if not exists %s ( name varchar(500) not null constraint %s_pk primary key, time timestamp ); create unique index if not exists %s_name_uindex on %s (name);", provider.DefaultTableName, provider.DefaultTableName, provider.DefaultTableName, provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ( name VARCHAR(500) NOT NULL unique, time timestamp, PRIMARY KEY (name) ) engine=InnoDB", provider.DefaultTableName),
 			expectErr:   errors.New("some db error"),
 		},
 	}
