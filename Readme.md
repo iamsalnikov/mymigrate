@@ -48,6 +48,7 @@ import (
 
     _ "github.com/go-sql-driver/mysql"
     "github.com/iamsalnikov/mymigrate"
+	"github.com/iamsalnikov/mymigrate/provider/mysql"
 )
 
 func main() {
@@ -56,7 +57,8 @@ func main() {
         log.Fatalln(err)
     }
 
-    mymigrate.SetDatabase(db)
+	provider := mysql.NewMysqlProvider(db)
+    mymigrate.SetDatabaseProvider(provider)
 ```
 
 ### Add migrations
