@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/iamsalnikov/mymigrate/provider"
 	"time"
+
+	"github.com/iamsalnikov/mymigrate/provider"
 )
 
 // Provider - migration provider for postgres db
@@ -58,14 +59,14 @@ func (p *Provider) GetApplied(ctx context.Context) ([]string, error) {
 
 // MarkApplied - function for mark migration applied
 func (p *Provider) MarkApplied(ctx context.Context, name string, t time.Time) error {
-	query := fmt.Sprintf("INSERT INTO %s (name, time) VALUES (?, ?)", provider.DefaultTableName)
+	query := fmt.Sprintf("INSERT INTO %s (name, time) VALUES ($1, $2)", provider.DefaultTableName)
 	_, err := p.db.ExecContext(ctx, query, name, t)
 	return err
 }
 
 // DeleteApplied - function for delete migration from applied list
 func (p *Provider) DeleteApplied(ctx context.Context, name string) error {
-	query := fmt.Sprintf("DELETE FROM %s WHERE name=?", provider.DefaultTableName)
+	query := fmt.Sprintf("DELETE FROM %s WHERE name=$1", provider.DefaultTableName)
 	_, err := p.db.ExecContext(ctx, query, name)
 	return err
 }

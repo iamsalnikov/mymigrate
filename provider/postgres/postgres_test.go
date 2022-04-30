@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/iamsalnikov/mymigrate/provider"
 	"github.com/iamsalnikov/mymigrate/provider/postgres"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestPsqlProvider_CreateMigrationsTable(t *testing.T) {
@@ -126,7 +127,7 @@ func TestPsqlProvider_MarkApplied(t *testing.T) {
 			name:        "migration_1",
 			time:        now,
 			execError:   nil,
-			expectQuery: fmt.Sprintf("INSERT INTO %s (name, time) VALUES (?, ?)", provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("INSERT INTO %s (name, time) VALUES ($1, $2)", provider.DefaultTableName),
 			expectArgs:  []interface{}{"migration_1", now},
 			expectErr:   nil,
 		},
@@ -134,7 +135,7 @@ func TestPsqlProvider_MarkApplied(t *testing.T) {
 			name:        "migration_2",
 			time:        now,
 			execError:   errors.New("some db error"),
-			expectQuery: fmt.Sprintf("INSERT INTO %s (name, time) VALUES (?, ?)", provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("INSERT INTO %s (name, time) VALUES ($1, $2)", provider.DefaultTableName),
 			expectArgs:  []interface{}{"migration_2", now},
 			expectErr:   errors.New("some db error"),
 		},
@@ -173,14 +174,14 @@ func TestPsqlProvider_DeleteApplied(t *testing.T) {
 		"all is ok": {
 			name:        "migration_1",
 			execError:   nil,
-			expectQuery: fmt.Sprintf("DELETE FROM %s WHERE name=?", provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("DELETE FROM %s WHERE name=$1", provider.DefaultTableName),
 			expectArgs:  []interface{}{"migration_1"},
 			expectErr:   nil,
 		},
 		"db error": {
 			name:        "migration_2",
 			execError:   errors.New("some db error"),
-			expectQuery: fmt.Sprintf("DELETE FROM %s WHERE name=?", provider.DefaultTableName),
+			expectQuery: fmt.Sprintf("DELETE FROM %s WHERE name=$1", provider.DefaultTableName),
 			expectArgs:  []interface{}{"migration_2"},
 			expectErr:   errors.New("some db error"),
 		},
